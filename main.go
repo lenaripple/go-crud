@@ -1,38 +1,47 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
+type Fruit struct {
+	ID     string `json:"id,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Color  string `json:"color,omitempty"`
+	Rating int    `json:"rating,omitempty"`
 }
 
-func items(w http.ResponseWriter, r *http.Request) {
-	// io.WriteString(w, "Hello items!")
+var fruits []Fruit
+
+func index(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "items.html")
 }
 
-func newItem(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.NotFound(w, r)
+func GetFruitsEndpoint(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	for _, item := range fruits {
+		if item.ID == params["id"] {
+			json.NewEncoder(w).Encode(item)
+			return
+		}
 	}
-	// handle the POST
-	//Call to ParseForm makes form fields available.
-	err := r.ParseForm()
-	if err != nil {
-		// Handle error here via logging and then return
-		http.Error(w, "form parse failed", http.StatusInternalServerError)
-	}
-	name := r.PostFormValue("name")
-	fmt.Fprintf(w, "Hello, %s!", name)
+	json.NewEncoder(w).Encode(&Fruit{})
+}
+
+func GetFruitEndpoint(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(fruits)
 }
 
 func main() {
-	fmt.Println("hello world")
-	http.HandleFunc("/", hello)
-	http.HandleFunc("/items", items)
-	http.HandleFunc("/new", newItem)
-	http.ListenAndServe(":8000", nil)
+	router := mux.NewRouter()
+	fruits = append(fruits, Fruit{ID: "1", Name: "Orange", Color: "Orange", Rating: 1})
+	fruits = append(fruits, Fruit{ID: "2", Name: "Banana", Color: "Yellow", Rating: 5})
+	router.HandleFunc("/", index)
+	router.HandleFunc("/fruits", GetFruitEndpoint).Methods("GET")
+	router.HandleFunc("/fruits/{id}", GetFruitsEndpoint).Methods("GET")
+	log.Fatal(http.ListenAndServe(":8000", router))
 }
