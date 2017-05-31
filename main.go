@@ -36,6 +36,13 @@ func GetFruitEndpoint(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fruits)
 }
 
+func CreateFruitEndpoint(w http.ResponseWriter, r *http.Request) {
+	var fruit Fruit
+	_ = json.NewDecoder(r.Body).Decode(&fruit)
+	fruits = append(fruits, fruit)
+	json.NewEncoder(w).Encode(fruits)
+}
+
 func main() {
 	router := mux.NewRouter()
 	fruits = append(fruits, Fruit{ID: "1", Name: "Orange", Color: "Orange", Rating: 1})
@@ -43,5 +50,6 @@ func main() {
 	router.HandleFunc("/", index)
 	router.HandleFunc("/fruits", GetFruitEndpoint).Methods("GET")
 	router.HandleFunc("/fruits/{id}", GetFruitsEndpoint).Methods("GET")
+	router.HandleFunc("/fruits", CreateFruitEndpoint).Methods("POST")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
